@@ -154,7 +154,9 @@ export class QuickSwitcher {
       meta.className = "bqs-meta";
       meta.textContent = destination.kind === "thread"
         ? `Thread${destination.parentChannelName ? ` · #${destination.parentChannelName}` : ""}`
-        : destination.kind === "guild" ? "Server" : "Channel";
+        : destination.kind === "guild" ? "Server"
+          : destination.kind === "dm" ? (destination.groupDm ? "Group DM" : "Direct Message")
+            : "Channel";
 
       const badges = document.createElement("div");
       badges.className = "bqs-badges";

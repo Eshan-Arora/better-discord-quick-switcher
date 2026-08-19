@@ -44,9 +44,11 @@ npm run check       # typecheck, tests, production build
 
 - `Cmd+K` opens or closes the custom switcher and suppresses the stock switcher.
 - Empty query: mentions, non-muted unread destinations, decayed usage history, and recent message activity determine the order.
+- Unread direct and group DMs appear before every server destination; muted DMs only rise for explicit mentions.
 - Typed query: fuzzy name match dominates; recent message activity and decayed personal usage break close matches, while thread parent names provide weaker context.
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
 - Current-server text channels and client-known threads are searchable.
+- Recent/open direct and group DMs are searchable from any scope.
 - Other servers' internal destinations are excluded; the servers themselves remain selectable.
 - Server results use Discord's manually arranged sidebar and folder order as a strong prior, with exact-name matches and decayed local usage layered on top.
 - Visit counts and timestamps are stored locally through BetterDiscord's scoped data API.

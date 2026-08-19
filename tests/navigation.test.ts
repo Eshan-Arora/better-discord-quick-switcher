@@ -46,3 +46,14 @@ test("centers the navigated channel in Discord's channel list", () => {
   assert.equal(centerChannelInList(documentRoot, "guild-id", "thread-id"), true);
   assert.deepEqual(calls, [{block: "center", inline: "nearest", behavior: "auto"}]);
 });
+
+test("navigates direct messages through the @me route", () => {
+  const routes: string[] = [];
+  const navigator = new DiscordNavigator({
+    getStore: () => undefined,
+    getByStrings: () => (route: string) => routes.push(route),
+    getModule: () => undefined
+  });
+  navigator.navigate({...thread, kind: "dm", guildId: "@me", groupDm: false});
+  assert.deepEqual(routes, ["/channels/@me/thread-id"]);
+});

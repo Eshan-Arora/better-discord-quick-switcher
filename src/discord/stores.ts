@@ -18,10 +18,12 @@ interface DiscordChannel {
   parentId?: string;
   last_message_id?: string;
   lastMessageId?: string;
+  recipients?: string[];
   position?: number;
   rawPosition?: number;
   isThread?: () => boolean;
   isHidden?: () => boolean;
+  getRecipientId?: () => string | undefined;
 }
 
 function safely<T>(operation: () => T, fallback: T): T {
@@ -37,7 +39,12 @@ function collectChannelObjects(value: unknown, output: Map<string, DiscordChanne
   seen.add(value);
 
   const possible = value as Partial<DiscordChannel>;
-  if (typeof possible.id === "string" && typeof possible.name === "string") {
+  if (typeof possible.id === "string" && (
+    typeof possible.name === "string"
+    || possible.type !== undefined
+    || Array.isArray(possible.recipients)
+    || typeof possible.getRecipientId === "function"
+  )) {
     output.set(possible.id, possible as DiscordChannel);
     return;
   }
@@ -55,6 +62,19 @@ function collectChannelObjects(value: unknown, output: Map<string, DiscordChanne
   for (const entry of Object.values(value)) {
     if (typeof entry !== "function") collectChannelObjects(entry, output, seen, depth + 1);
   }
+}
+
+function listValues(value: unknown): unknown[] {
+  if (Array.isArray(value)) return value;
+  if (value instanceof Set) return [...value];
+  if (value instanceof Map) return [...value.values()];
+  if (value && typeof (value as {toArray?: unknown}).toArray === "function") {
+    return safely(() => (value as {toArray(): unknown[]}).toArray(), []);
+  }
+  if (value && typeof (value as {[Symbol.iterator]?: unknown})[Symbol.iterator] === "function") {
+    return safely(() => [...value as Iterable<unknown>], []);
+  }
+  return [];
 }
 
 interface GuildTreeNode {
@@ -92,7 +112,7 @@ function snowflakeTimestamp(id: string | undefined): number | undefined {
   }
 }
 
-function isChannelMuted(store: any, guildId: string, channelId: string): boolean {
+function isChannelMuted(store: any, guildId: string | null, channelId: string): boolean {
   if (typeof store?.isGuildOrCategoryOrChannelMuted === "function") {
     try {
       return store.isGuildOrCategoryOrChannelMuted(guildId, channelId) === true;
@@ -101,6 +121,35 @@ function isChannelMuted(store: any, guildId: string, channelId: string): boolean
     }
   }
   return safely(() => store?.isChannelMuted?.(guildId, channelId) === true, false);
+}
+
+function isPrivateChannel(channel: DiscordChannel): boolean {
+  if (typeof channel.type === "number") return channel.type === 1 || channel.type === 3;
+  return channel.type === "DM" || channel.type === "GROUP_DM";
+}
+
+function isGroupDm(channel: DiscordChannel): boolean {
+  return channel.type === 3 || channel.type === "GROUP_DM";
+}
+
+interface DiscordUser {
+  id: string;
+  username?: string;
+  globalName?: string;
+  displayName?: string;
+}
+
+export function privateChannelName(channel: DiscordChannel, UserStore: any): string {
+  if (isGroupDm(channel) && channel.name?.trim()) return channel.name.trim();
+  const recipientIds = channel.recipients?.length
+    ? channel.recipients
+    : [safely(() => channel.getRecipientId?.(), undefined)].filter((id): id is string => Boolean(id));
+  const names = recipientIds.map((userId) => {
+    const user = safely<DiscordUser | undefined>(() => UserStore?.getUser?.(userId), undefined);
+    return user?.globalName || user?.displayName || user?.username;
+  }).filter((name): name is string => Boolean(name));
+  if (names.length) return names.join(", ");
+  return isGroupDm(channel) ? "Unnamed group" : "Direct Message";
 }
 
 function isThread(channel: DiscordChannel): boolean {
@@ -134,6 +183,9 @@ export class DiscordDestinationStore {
     const UserGuildSettingsStore = this.webpack.getStore("UserGuildSettingsStore");
     const JoinedThreadsStore = this.webpack.getStore("JoinedThreadsStore");
     const SortedGuildStore = this.webpack.getStore("SortedGuildStore");
+    const PrivateChannelSortStore = this.webpack.getStore("PrivateChannelSortStore");
+    const PrivateChannelReadStateStore = this.webpack.getStore("PrivateChannelReadStateStore");
+    const UserStore = this.webpack.getStore("UserStore");
 
     if (!SelectedGuildStore) warnings.push("SelectedGuildStore unavailable");
     if (!GuildStore) warnings.push("GuildStore unavailable");
@@ -149,6 +201,45 @@ export class DiscordDestinationStore {
       orderedGuildIds(safely(() => SortedGuildStore?.getGuildsTree?.(), null))
         .map((guildId, index) => [guildId, index])
     );
+
+    const privateChannels = new Map<string, DiscordChannel>();
+    collectChannelObjects(safely(() => ChannelStore?.getMutablePrivateChannels?.(), null), privateChannels);
+    collectChannelObjects(safely(() => ChannelStore?.getSortedPrivateChannels?.(), null), privateChannels);
+    const privateChannelIds = listValues(safely(() => PrivateChannelSortStore?.getPrivateChannelIds?.(), null));
+    const privateOrder = new Map(
+      privateChannelIds
+        .map((value) => typeof value === "string" ? value : (value as {id?: unknown} | null)?.id)
+        .filter((id): id is string => typeof id === "string")
+        .map((channelId, index) => [channelId, index])
+    );
+    const unreadPrivateIds = new Set(
+      listValues(safely(() => PrivateChannelReadStateStore?.getUnreadPrivateChannelIds?.(), null))
+        .filter((id): id is string => typeof id === "string")
+    );
+
+    for (const channel of privateChannels.values()) {
+      if (!isPrivateChannel(channel)) continue;
+      const mentions = Math.max(0, safely(() => Number(ReadStateStore?.getMentionCount?.(channel.id) ?? 0), 0));
+      const rawUnreadCount = Math.max(0, safely(() => Number(ReadStateStore?.getUnreadCount?.(channel.id) ?? 0), 0));
+      const muted = isChannelMuted(UserGuildSettingsStore, null, channel.id);
+      const rawUnread = unreadPrivateIds.has(channel.id)
+        || safely(() => ReadStateStore?.hasUnread?.(channel.id) === true, false)
+        || mentions > 0
+        || rawUnreadCount > 0;
+      destinations.push({
+        kind: "dm",
+        id: channel.id,
+        guildId: "@me",
+        name: privateChannelName(channel, UserStore),
+        groupDm: isGroupDm(channel),
+        unread: mentions > 0 || (rawUnread && !muted),
+        unreadCount: muted && mentions === 0 ? 0 : rawUnreadCount,
+        mentions,
+        muted,
+        lastActivityAt: snowflakeTimestamp(channel.lastMessageId ?? channel.last_message_id),
+        position: privateOrder.get(channel.id) ?? Number.MAX_SAFE_INTEGER
+      });
+    }
 
     if (currentGuildId && ChannelStore) {
       const channels = new Map<string, DiscordChannel>();

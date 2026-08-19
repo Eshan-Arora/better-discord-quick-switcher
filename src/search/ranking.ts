@@ -53,13 +53,16 @@ export function rankDestinations(
     let score: number;
 
     if (isEmpty) {
-      const scopeBase = destination.kind === "guild" ? -5_000 : 1_000;
+      const scopeBase = destination.kind === "guild" ? -5_000 : destination.kind === "dm" ? 1_200 : 1_000;
+      const unreadDmPriority = destination.kind === "dm" && actionableUnread ? 20_000 : 0;
       score = scopeBase
+        + unreadDmPriority
         + (destination.mentions > 0 ? 8_000 + Math.log1p(destination.mentions) * 300 : 0)
         + (actionableUnread ? 3_000 : 0)
         + (actionableUnread ? Math.min(destination.unreadCount, 100) * 5 : 0)
         + usage * 700
-        + activity * 200
+        + activity * (destination.kind === "dm" ? 300 : 200)
+        + (destination.kind === "dm" ? sidebarAffinity(destination.position) * 300 : 0)
         + sidebar * 200;
     } else {
       const match = textualScore(destination, trimmedQuery);

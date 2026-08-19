@@ -36,7 +36,7 @@ export class DiscordNavigator {
       return;
     }
     transitionTo(`/channels/${destination.guildId}/${destination.id}`);
-    this.scheduleCenter(destination.guildId, destination.id);
+    if (destination.kind !== "dm") this.scheduleCenter(destination.guildId, destination.id);
   }
 
   stop(): void {

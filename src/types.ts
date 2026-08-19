@@ -1,4 +1,4 @@
-export type DestinationKind = "channel" | "thread" | "guild";
+export type DestinationKind = "channel" | "thread" | "guild" | "dm";
 
 export interface Destination {
   kind: DestinationKind;
@@ -7,6 +7,7 @@ export interface Destination {
   name: string;
   parentChannelId?: string;
   parentChannelName?: string;
+  groupDm?: boolean;
   unread: boolean;
   unreadCount: number;
   mentions: number;

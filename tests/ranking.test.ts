@@ -75,3 +75,20 @@ test("an exact server name still beats sidebar order", () => {
   ];
   assert.equal(rankDestinations(destinations, "PNW Cubing", {})[0]?.id, "cubing");
 });
+
+test("unread DMs rank ahead of mentions and unread server destinations", () => {
+  const destinations: Destination[] = [
+    {...base[0], id: "mention", unread: true, mentions: 2},
+    {...base[1], id: "unread-thread"},
+    {...base[0], kind: "dm", guildId: "@me", id: "dm", name: "Ada", unread: true, position: 0}
+  ];
+  assert.equal(rankDestinations(destinations, "", {})[0]?.id, "dm");
+});
+
+test("DM names participate in normal typed search", () => {
+  const destinations: Destination[] = [
+    ...base,
+    {...base[0], kind: "dm", guildId: "@me", id: "dm", name: "Ada Lovelace", unread: false, position: 0}
+  ];
+  assert.equal(rankDestinations(destinations, "ada", {})[0]?.id, "dm");
+});
