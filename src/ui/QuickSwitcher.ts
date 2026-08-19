@@ -8,22 +8,42 @@ interface QuickSwitcherOptions {
   onClose(): void;
 }
 
-export const destinationIconPaths: Record<Destination["kind"], readonly string[]> = {
-  channel: ["M8 3 6 21", "M18 3l-2 18", "M3 9h18", "M2 15h18"],
-  thread: ["M4 5.5h12v9H8l-4 4v-13Z", "M16 8.5h4v9h-3l-3 2v-5", "M8 9h4", "M8 12h3"],
-  guild: ["M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 10.5H5A1.5 1.5 0 0 1 3.5 9V6A1.5 1.5 0 0 1 5 4.5Z", "M5 13.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18v-3A1.5 1.5 0 0 1 5 13.5Z", "M7 7.5h.01", "M7 16.5h.01"],
-  dm: ["M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z", "M5 20c.7-4.2 3.1-6.3 7-6.3s6.3 2.1 7 6.3"]
+interface DestinationIconDefinition {
+  filled: boolean;
+  paths: readonly string[];
+}
+
+export const destinationIconDefinitions: Record<Destination["kind"], DestinationIconDefinition> = {
+  channel: {
+    filled: true,
+    paths: ["M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z"]
+  },
+  thread: {
+    filled: true,
+    paths: ["M12 2.81a1 1 0 0 1 0-1.41l.36-.36a1 1 0 0 1 1.41 0l9.2 9.2a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.3.13l-9.54-6.72a1 1 0 0 1-.08-1.58l1-1L12 2.8ZM12 21.2a1 1 0 0 1 0 1.41l-.35.35a1 1 0 0 1-1.41 0l-9.2-9.19a1 1 0 0 1 0-1.41l.7-.7a1 1 0 0 1 1.3-.12l9.54 6.72a1 1 0 0 1 .07 1.58l-1 1 .35.36ZM15.66 16.8a1 1 0 0 1-1.38.28l-8.49-5.66A1 1 0 1 1 6.9 9.76l8.49 5.65a1 1 0 0 1 .27 1.39ZM17.1 14.25a1 1 0 1 0 1.11-1.66L9.73 6.93a1 1 0 0 0-1.11 1.66l8.49 5.66Z"]
+  },
+  guild: {
+    filled: false,
+    paths: ["M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 10.5H5A1.5 1.5 0 0 1 3.5 9V6A1.5 1.5 0 0 1 5 4.5Z", "M5 13.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18v-3A1.5 1.5 0 0 1 5 13.5Z", "M7 7.5h.01", "M7 16.5h.01"]
+  },
+  dm: {
+    filled: false,
+    paths: ["M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z", "M5 20c.7-4.2 3.1-6.3 7-6.3s6.3 2.1 7 6.3"]
+  }
 };
 
 function createDestinationIcon(kind: Destination["kind"]): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("fill", "none");
-  svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "1.8");
-  svg.setAttribute("stroke-linecap", "round");
-  svg.setAttribute("stroke-linejoin", "round");
-  for (const pathData of destinationIconPaths[kind]) {
+  const definition = destinationIconDefinitions[kind];
+  svg.setAttribute("fill", definition.filled ? "currentColor" : "none");
+  svg.setAttribute("stroke", definition.filled ? "none" : "currentColor");
+  if (!definition.filled) {
+    svg.setAttribute("stroke-width", "1.8");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+  }
+  for (const pathData of definition.paths) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
     svg.append(path);
@@ -175,7 +195,16 @@ export class QuickSwitcher {
       const symbol = document.createElement("div");
       symbol.className = "bqs-symbol";
       symbol.dataset.kind = destination.kind;
-      symbol.append(createDestinationIcon(destination.kind));
+      if (destination.kind === "guild" && destination.iconUrl) {
+        const image = document.createElement("img");
+        image.className = "bqs-server-icon";
+        image.src = destination.iconUrl;
+        image.alt = "";
+        image.draggable = false;
+        symbol.append(image);
+      } else {
+        symbol.append(createDestinationIcon(destination.kind));
+      }
       symbol.title = destination.kind === "guild" ? "Server"
         : destination.kind === "dm" ? (destination.groupDm ? "Group DM" : "Direct Message")
           : destination.kind === "thread" ? "Thread" : "Channel";

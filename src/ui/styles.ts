@@ -76,6 +76,14 @@ export const styles = `
   height: 20px;
 }
 
+.bqs-server-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  object-fit: cover;
+}
+
 .bqs-name {
   grid-column: 2;
   overflow: hidden;

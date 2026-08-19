@@ -47,7 +47,7 @@ npm run check       # typecheck, tests, production build
 - Unread direct and group DMs appear before every server destination; muted DMs only rise for explicit mentions.
 - Typed query: fuzzy name match dominates; recent message activity and decayed personal usage break close matches, while thread parent names provide weaker context.
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
-- Discord-style SVG icons distinguish DMs, channels, threads, and servers at a glance.
+- Discord's own hash and thread SVG geometry distinguish channels and threads; servers use their guild image when available, with local SVG fallbacks for iconless servers and DMs.
 - Current-server text channels and client-known threads are searchable.
 - Recent/open direct and group DMs are searchable from any scope.
 - Other servers' internal destinations are excluded; the servers themselves remain selectable.

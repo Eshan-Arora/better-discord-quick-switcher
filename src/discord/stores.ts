@@ -95,6 +95,11 @@ export function orderedGuildIds(tree: unknown): string[] {
   return ordered;
 }
 
+export function guildIconUrl(guild: {id: string; icon?: string | null}): string | undefined {
+  if (!guild.icon) return undefined;
+  return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.webp?size=64`;
+}
+
 function channelGuildId(channel: DiscordChannel): string | undefined {
   return channel.guild_id ?? channel.guildId;
 }
@@ -194,7 +199,7 @@ export class DiscordDestinationStore {
     if (!ReadStateStore) warnings.push("ReadStateStore unavailable");
 
     const currentGuildId = safely(() => SelectedGuildStore?.getGuildId?.() ?? null, null);
-    const guilds = safely<Record<string, {id: string; name?: string}>>(() => GuildStore?.getGuilds?.() ?? {}, {});
+    const guilds = safely<Record<string, {id: string; name?: string; icon?: string | null}>>(() => GuildStore?.getGuilds?.() ?? {}, {});
     const currentGuildName = currentGuildId ? guilds[currentGuildId]?.name ?? null : null;
     const destinations: Destination[] = [];
     const guildOrder = new Map(
@@ -306,6 +311,7 @@ export class DiscordDestinationStore {
         id: guild.id,
         guildId: guild.id,
         name: guild.name || "Unnamed server",
+        iconUrl: guildIconUrl(guild),
         unread: false,
         unreadCount: 0,
         mentions: 0,

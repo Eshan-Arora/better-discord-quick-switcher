@@ -8,6 +8,7 @@ export interface Destination {
   parentChannelId?: string;
   parentChannelName?: string;
   groupDm?: boolean;
+  iconUrl?: string;
   unread: boolean;
   unreadCount: number;
   mentions: number;
