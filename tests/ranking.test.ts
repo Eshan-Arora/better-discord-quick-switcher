@@ -92,3 +92,28 @@ test("DM names participate in normal typed search", () => {
   ];
   assert.equal(rankDestinations(destinations, "ada", {})[0]?.id, "dm");
 });
+
+test("a strong server match beats an old weakly matching group DM", () => {
+  const now = 2_000_000_000_000;
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "old-dm", name: "Stephen, oculina_sp", groupDm: true, position: 0, lastActivityAt: now - 5 * 365 * DAY},
+    {...base[2], id: "shopify", name: "Shopify Fall 2026 Interns", position: 0}
+  ];
+  assert.equal(rankDestinations(destinations, "shop", {}, now)[0]?.id, "shopify");
+});
+
+test("an exact DM match still beats a merely prefixed server", () => {
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "dm", name: "Shop", position: 20},
+    {...base[2], id: "shopify", name: "Shopify Fall 2026 Interns", position: 0}
+  ];
+  assert.equal(rankDestinations(destinations, "shop", {})[0]?.id, "dm");
+});
+
+test("read DMs do not crowd out current-server destinations on an empty query", () => {
+  const destinations: Destination[] = [
+    {...base[0], id: "channel", name: "Current channel"},
+    {...base[0], kind: "dm", guildId: "@me", id: "dm", name: "Recent DM", position: 0, lastActivityAt: Date.now()}
+  ];
+  assert.equal(rankDestinations(destinations, "", {})[0]?.id, "channel");
+});

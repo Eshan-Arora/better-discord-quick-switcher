@@ -53,25 +53,30 @@ export function rankDestinations(
     let score: number;
 
     if (isEmpty) {
-      const scopeBase = destination.kind === "guild" ? -5_000 : destination.kind === "dm" ? 1_200 : 1_000;
+      const scopeBase = destination.kind === "guild" ? -5_000 : destination.kind === "dm" ? 500 : 1_000;
       const unreadDmPriority = destination.kind === "dm" && actionableUnread ? 20_000 : 0;
       score = scopeBase
         + unreadDmPriority
         + (destination.mentions > 0 ? 8_000 + Math.log1p(destination.mentions) * 300 : 0)
         + (actionableUnread ? 3_000 : 0)
         + (actionableUnread ? Math.min(destination.unreadCount, 100) * 5 : 0)
-        + usage * 700
-        + activity * (destination.kind === "dm" ? 300 : 200)
-        + (destination.kind === "dm" ? sidebarAffinity(destination.position) * 300 : 0)
+        + usage * (destination.kind === "dm" ? 300 : 700)
+        + activity * (destination.kind === "dm" ? 100 : 200)
+        + (destination.kind === "dm" ? sidebarAffinity(destination.position) * 100 : 0)
         + sidebar * 200;
     } else {
       const match = textualScore(destination, trimmedQuery);
       if (match === null) continue;
       if (destination.kind === "guild") {
-        score = match * 500
-          + (match === 1 ? 350 : 0)
-          + sidebar * 120
-          + usage * 80;
+        score = match * 1_000
+          + (match === 1 ? 80 : 0)
+          + sidebar * 100
+          + usage * 45;
+      } else if (destination.kind === "dm") {
+        score = match * 1_000
+          + (actionableUnread ? 25 : 0)
+          + usage * 15
+          + activity * 20;
       } else {
         score = match * 1_000
           + 60

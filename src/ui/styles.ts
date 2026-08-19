@@ -67,14 +67,14 @@ export const styles = `
   grid-row: 1 / span 2;
   align-self: center;
   width: 22px;
-  color: var(--text-muted, #949ba4);
-  font: 650 16px/22px var(--font-primary, system-ui, sans-serif);
-  text-align: center;
+  color: var(--channel-icon, var(--text-muted, #949ba4));
 }
 
-.bqs-symbol[data-kind="dm"] { color: var(--brand-500, #5865f2); }
-.bqs-symbol[data-kind="thread"] { color: var(--text-link, #00a8fc); }
-.bqs-symbol[data-kind="guild"] { color: var(--status-positive, #23a55a); }
+.bqs-symbol svg {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
 
 .bqs-name {
   grid-column: 2;

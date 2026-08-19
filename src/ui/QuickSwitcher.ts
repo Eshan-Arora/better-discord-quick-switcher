@@ -8,13 +8,27 @@ interface QuickSwitcherOptions {
   onClose(): void;
 }
 
-export function destinationSymbol(kind: Destination["kind"]): string {
-  switch (kind) {
-    case "dm": return "@";
-    case "channel": return "#";
-    case "thread": return "◉";
-    case "guild": return "◆";
+export const destinationIconPaths: Record<Destination["kind"], readonly string[]> = {
+  channel: ["M8 3 6 21", "M18 3l-2 18", "M3 9h18", "M2 15h18"],
+  thread: ["M4 5.5h12v9H8l-4 4v-13Z", "M16 8.5h4v9h-3l-3 2v-5", "M8 9h4", "M8 12h3"],
+  guild: ["M5 4.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 10.5H5A1.5 1.5 0 0 1 3.5 9V6A1.5 1.5 0 0 1 5 4.5Z", "M5 13.5h14a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19 19.5H5A1.5 1.5 0 0 1 3.5 18v-3A1.5 1.5 0 0 1 5 13.5Z", "M7 7.5h.01", "M7 16.5h.01"],
+  dm: ["M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z", "M5 20c.7-4.2 3.1-6.3 7-6.3s6.3 2.1 7 6.3"]
+};
+
+function createDestinationIcon(kind: Destination["kind"]): SVGSVGElement {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.8");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  for (const pathData of destinationIconPaths[kind]) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    svg.append(path);
   }
+  return svg;
 }
 
 export class QuickSwitcher {
@@ -161,7 +175,7 @@ export class QuickSwitcher {
       const symbol = document.createElement("div");
       symbol.className = "bqs-symbol";
       symbol.dataset.kind = destination.kind;
-      symbol.textContent = destinationSymbol(destination.kind);
+      symbol.append(createDestinationIcon(destination.kind));
       symbol.title = destination.kind === "guild" ? "Server"
         : destination.kind === "dm" ? (destination.groupDm ? "Group DM" : "Direct Message")
           : destination.kind === "thread" ? "Thread" : "Channel";
