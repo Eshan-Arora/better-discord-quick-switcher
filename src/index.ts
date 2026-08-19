@@ -27,6 +27,7 @@ export default class BetterQuickSwitcherPlugin {
 
   stop(): void {
     window.removeEventListener("keydown", this.onGlobalKeyDown, true);
+    this.navigator?.stop();
     this.switcher?.close(false);
     this.switcher = null;
     this.api?.DOM.removeStyle();

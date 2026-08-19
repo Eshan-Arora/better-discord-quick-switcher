@@ -114,4 +114,12 @@ export const styles = `
   color: var(--text-muted, #949ba4);
   font: 400 11px/16px var(--font-primary, system-ui, sans-serif);
 }
+
+/* Allow Discord's final channel to scroll past the list's natural end and sit centered. */
+ul[aria-label="Channels"]::after {
+  display: block;
+  height: 45vh;
+  content: "";
+  pointer-events: none;
+}
 `;

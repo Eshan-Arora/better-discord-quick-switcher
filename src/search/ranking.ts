@@ -21,6 +21,11 @@ export function recentActivity(lastActivityAt: number | undefined, now = Date.no
   return Math.exp(-age / (90 * DAY));
 }
 
+export function sidebarAffinity(position: number): number {
+  if (!Number.isFinite(position) || position < 0 || position === Number.MAX_SAFE_INTEGER) return 0;
+  return 1 / (1 + position / 5);
+}
+
 function textualScore(destination: Destination, query: string): number | null {
   const primary = fuzzyScore(query, destination.name);
   const contextual = destination.kind === "thread" && destination.parentChannelName
@@ -44,6 +49,7 @@ export function rankDestinations(
     const usage = decayedUsage(history[destination.id], now);
     const activity = recentActivity(destination.lastActivityAt, now);
     const actionableUnread = destination.unread && (!destination.muted || destination.mentions > 0);
+    const sidebar = destination.kind === "guild" ? sidebarAffinity(destination.position) : 0;
     let score: number;
 
     if (isEmpty) {
@@ -53,16 +59,24 @@ export function rankDestinations(
         + (actionableUnread ? 3_000 : 0)
         + (actionableUnread ? Math.min(destination.unreadCount, 100) * 5 : 0)
         + usage * 700
-        + activity * 200;
+        + activity * 200
+        + sidebar * 200;
     } else {
       const match = textualScore(destination, trimmedQuery);
       if (match === null) continue;
-      score = match * (destination.kind === "guild" ? 850 : 1_000)
-        + (destination.kind === "guild" ? 0 : 60)
-        + (destination.mentions > 0 ? 140 : 0)
-        + (actionableUnread ? 70 : 0)
-        + usage * 25
-        + activity * 60;
+      if (destination.kind === "guild") {
+        score = match * 500
+          + (match === 1 ? 350 : 0)
+          + sidebar * 120
+          + usage * 80;
+      } else {
+        score = match * 1_000
+          + 60
+          + (destination.mentions > 0 ? 140 : 0)
+          + (actionableUnread ? 70 : 0)
+          + usage * 25
+          + activity * 60;
+      }
     }
 
     ranked.push({...destination, score});

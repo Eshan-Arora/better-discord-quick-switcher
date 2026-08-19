@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {DiscordNavigator} from "../src/discord/navigation.ts";
+import {centerChannelInList, DiscordNavigator} from "../src/discord/navigation.ts";
 import type {Destination} from "../src/types.ts";
 
 const thread: Destination = {
@@ -35,4 +35,14 @@ test("falls back to a transitionTo module", () => {
   });
   navigator.navigate(thread);
   assert.deepEqual(routes, ["/channels/guild-id/thread-id"]);
+});
+
+test("centers the navigated channel in Discord's channel list", () => {
+  const calls: ScrollIntoViewOptions[] = [];
+  const element = {scrollIntoView: (options: ScrollIntoViewOptions) => calls.push(options)};
+  const documentRoot = {
+    querySelector: (selector: string) => selector === '[data-list-item-id="channels___thread-id"]' ? element : null
+  } as unknown as Document;
+  assert.equal(centerChannelInList(documentRoot, "guild-id", "thread-id"), true);
+  assert.deepEqual(calls, [{block: "center", inline: "nearest", behavior: "auto"}]);
 });

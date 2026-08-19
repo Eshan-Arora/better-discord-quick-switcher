@@ -59,3 +59,19 @@ test("recent channel activity breaks close fuzzy matches", () => {
   }, now);
   assert.equal(ranked[0]?.id, "active");
 });
+
+test("sidebar order decides close non-exact server matches", () => {
+  const destinations: Destination[] = [
+    {...base[2], id: "organizers", name: "PNW Competition Organizers", position: 0},
+    {...base[2], id: "cubing", name: "PNW Cubing", position: 8}
+  ];
+  assert.equal(rankDestinations(destinations, "pnw", {})[0]?.id, "organizers");
+});
+
+test("an exact server name still beats sidebar order", () => {
+  const destinations: Destination[] = [
+    {...base[2], id: "organizers", name: "PNW Competition Organizers", position: 0},
+    {...base[2], id: "cubing", name: "PNW Cubing", position: 30}
+  ];
+  assert.equal(rankDestinations(destinations, "PNW Cubing", {})[0]?.id, "cubing");
+});

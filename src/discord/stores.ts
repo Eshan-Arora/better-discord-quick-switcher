@@ -57,6 +57,24 @@ function collectChannelObjects(value: unknown, output: Map<string, DiscordChanne
   }
 }
 
+interface GuildTreeNode {
+  type?: string;
+  id?: string;
+  children?: GuildTreeNode[];
+}
+
+export function orderedGuildIds(tree: unknown): string[] {
+  const root = (tree as {root?: GuildTreeNode} | null)?.root;
+  const ordered: string[] = [];
+  const visit = (node: GuildTreeNode | undefined): void => {
+    if (!node) return;
+    if (node.type === "guild" && typeof node.id === "string") ordered.push(node.id);
+    for (const child of node.children ?? []) visit(child);
+  };
+  visit(root);
+  return ordered;
+}
+
 function channelGuildId(channel: DiscordChannel): string | undefined {
   return channel.guild_id ?? channel.guildId;
 }
@@ -97,7 +115,13 @@ function isTextChannel(channel: DiscordChannel): boolean {
 }
 
 export class DiscordDestinationStore {
-  constructor(private readonly webpack: WebpackApi, private readonly logger: LoggerApi) {}
+  private readonly webpack: WebpackApi;
+  private readonly logger: LoggerApi;
+
+  constructor(webpack: WebpackApi, logger: LoggerApi) {
+    this.webpack = webpack;
+    this.logger = logger;
+  }
 
   snapshot(): DestinationSnapshot {
     const warnings: string[] = [];
@@ -109,6 +133,7 @@ export class DiscordDestinationStore {
     const PermissionStore = this.webpack.getStore("PermissionStore");
     const UserGuildSettingsStore = this.webpack.getStore("UserGuildSettingsStore");
     const JoinedThreadsStore = this.webpack.getStore("JoinedThreadsStore");
+    const SortedGuildStore = this.webpack.getStore("SortedGuildStore");
 
     if (!SelectedGuildStore) warnings.push("SelectedGuildStore unavailable");
     if (!GuildStore) warnings.push("GuildStore unavailable");
@@ -120,6 +145,10 @@ export class DiscordDestinationStore {
     const guilds = safely<Record<string, {id: string; name?: string}>>(() => GuildStore?.getGuilds?.() ?? {}, {});
     const currentGuildName = currentGuildId ? guilds[currentGuildId]?.name ?? null : null;
     const destinations: Destination[] = [];
+    const guildOrder = new Map(
+      orderedGuildIds(safely(() => SortedGuildStore?.getGuildsTree?.(), null))
+        .map((guildId, index) => [guildId, index])
+    );
 
     if (currentGuildId && ChannelStore) {
       const channels = new Map<string, DiscordChannel>();
@@ -190,7 +219,7 @@ export class DiscordDestinationStore {
         unreadCount: 0,
         mentions: 0,
         muted: false,
-        position: Number.MAX_SAFE_INTEGER
+        position: guildOrder.get(guild.id) ?? Number.MAX_SAFE_INTEGER
       });
     }
 

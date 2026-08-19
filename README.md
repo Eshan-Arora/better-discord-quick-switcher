@@ -48,8 +48,10 @@ npm run check       # typecheck, tests, production build
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
 - Current-server text channels and client-known threads are searchable.
 - Other servers' internal destinations are excluded; the servers themselves remain selectable.
+- Server results use Discord's manually arranged sidebar and folder order as a strong prior, with exact-name matches and decayed local usage layered on top.
 - Visit counts and timestamps are stored locally through BetterDiscord's scoped data API.
 - Muted channels and threads remain searchable but ordinary unread state does not boost them; explicit mentions remain actionable.
+- After navigation, the selected channel is scrolled to the middle of Discord's channel list when possible.
 
 ## Architecture and Discord updates
 

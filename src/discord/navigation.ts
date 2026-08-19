@@ -7,8 +7,18 @@ interface WebpackApi {
   getModule(filter: (module: any) => boolean, options?: Record<string, unknown>): any;
 }
 
+export function centerChannelInList(documentRoot: Document, guildId: string, channelId: string): boolean {
+  const route = `/channels/${guildId}/${channelId}`;
+  const element = documentRoot.querySelector<HTMLElement>(`[data-list-item-id="channels___${channelId}"]`)
+    ?? documentRoot.querySelector<HTMLElement>(`a[href="${route}"]`);
+  if (!element) return false;
+  element.scrollIntoView({block: "center", inline: "nearest", behavior: "auto"});
+  return true;
+}
+
 export class DiscordNavigator {
   private readonly webpack: WebpackApi;
+  private centerTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(webpack: WebpackApi) {
     this.webpack = webpack;
@@ -19,10 +29,19 @@ export class DiscordNavigator {
     if (!transitionTo) throw new Error("Discord navigation module is unavailable");
 
     if (destination.kind === "guild") {
-      transitionTo(this.guildRoute(destination.guildId));
+      const route = this.guildRoute(destination.guildId);
+      transitionTo(route);
+      const channelId = route.split("/")[3];
+      if (channelId) this.scheduleCenter(destination.guildId, channelId);
       return;
     }
     transitionTo(`/channels/${destination.guildId}/${destination.id}`);
+    this.scheduleCenter(destination.guildId, destination.id);
+  }
+
+  stop(): void {
+    if (this.centerTimer) clearTimeout(this.centerTimer);
+    this.centerTimer = null;
   }
 
   private guildRoute(guildId: string): string {
@@ -59,6 +78,17 @@ export class DiscordNavigator {
     return typeof legacyModule?.transitionTo === "function"
       ? legacyModule.transitionTo.bind(legacyModule)
       : null;
+  }
+
+  private scheduleCenter(guildId: string, channelId: string, attempt = 0): void {
+    if (typeof document === "undefined") return;
+    if (this.centerTimer) clearTimeout(this.centerTimer);
+    const delays = [0, 80, 180, 350, 650];
+    this.centerTimer = setTimeout(() => {
+      this.centerTimer = null;
+      if (centerChannelInList(document, guildId, channelId)) return;
+      if (attempt + 1 < delays.length) this.scheduleCenter(guildId, channelId, attempt + 1);
+    }, delays[attempt]);
   }
 
   private tryCall<T>(operation: () => T): T | undefined {
