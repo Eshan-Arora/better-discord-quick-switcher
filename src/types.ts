@@ -1,0 +1,28 @@
+export type DestinationKind = "channel" | "thread" | "guild";
+
+export interface Destination {
+  kind: DestinationKind;
+  id: string;
+  guildId: string;
+  name: string;
+  parentChannelId?: string;
+  parentChannelName?: string;
+  unread: boolean;
+  unreadCount: number;
+  mentions: number;
+  position: number;
+}
+
+export interface HistoryEntry {
+  visits: number;
+  lastVisited: number;
+}
+
+export type NavigationHistory = Record<string, HistoryEntry>;
+
+export interface DestinationSnapshot {
+  currentGuildId: string | null;
+  currentGuildName: string | null;
+  destinations: Destination[];
+  warnings: string[];
+}
