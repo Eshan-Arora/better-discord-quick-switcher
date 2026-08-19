@@ -43,12 +43,13 @@ npm run check       # typecheck, tests, production build
 ## Behavior
 
 - `Cmd+K` opens or closes the custom switcher and suppresses the stock switcher.
-- Empty query: mentions, unread destinations, and decayed usage history determine the order.
-- Typed query: fuzzy name match dominates; thread parent names provide weaker context.
+- Empty query: mentions, non-muted unread destinations, decayed usage history, and recent message activity determine the order.
+- Typed query: fuzzy name match dominates; recent message activity and decayed personal usage break close matches, while thread parent names provide weaker context.
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
 - Current-server text channels and client-known threads are searchable.
 - Other servers' internal destinations are excluded; the servers themselves remain selectable.
 - Visit counts and timestamps are stored locally through BetterDiscord's scoped data API.
+- Muted channels and threads remain searchable but ordinary unread state does not boost them; explicit mentions remain actionable.
 
 ## Architecture and Discord updates
 

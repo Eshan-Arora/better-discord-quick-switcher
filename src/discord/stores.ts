@@ -16,6 +16,8 @@ interface DiscordChannel {
   guildId?: string;
   parent_id?: string;
   parentId?: string;
+  last_message_id?: string;
+  lastMessageId?: string;
   position?: number;
   rawPosition?: number;
   isThread?: () => boolean;
@@ -63,6 +65,26 @@ function parentId(channel: DiscordChannel): string | undefined {
   return channel.parent_id ?? channel.parentId;
 }
 
+function snowflakeTimestamp(id: string | undefined): number | undefined {
+  if (!id) return undefined;
+  try {
+    return Number(BigInt(id) >> 22n) + 1_420_070_400_000;
+  } catch {
+    return undefined;
+  }
+}
+
+function isChannelMuted(store: any, guildId: string, channelId: string): boolean {
+  if (typeof store?.isGuildOrCategoryOrChannelMuted === "function") {
+    try {
+      return store.isGuildOrCategoryOrChannelMuted(guildId, channelId) === true;
+    } catch {
+      // Fall through to the narrower API used by older Discord builds.
+    }
+  }
+  return safely(() => store?.isChannelMuted?.(guildId, channelId) === true, false);
+}
+
 function isThread(channel: DiscordChannel): boolean {
   if (safely(() => channel.isThread?.() === true, false)) return true;
   if (typeof channel.type === "number") return channel.type === 10 || channel.type === 11 || channel.type === 12;
@@ -85,6 +107,8 @@ export class DiscordDestinationStore {
     const ChannelStore = this.webpack.getStore("ChannelStore");
     const ReadStateStore = this.webpack.getStore("ReadStateStore");
     const PermissionStore = this.webpack.getStore("PermissionStore");
+    const UserGuildSettingsStore = this.webpack.getStore("UserGuildSettingsStore");
+    const JoinedThreadsStore = this.webpack.getStore("JoinedThreadsStore");
 
     if (!SelectedGuildStore) warnings.push("SelectedGuildStore unavailable");
     if (!GuildStore) warnings.push("GuildStore unavailable");
@@ -128,8 +152,15 @@ export class DiscordDestinationStore {
           ? safely<DiscordChannel | undefined>(() => ChannelStore.getChannel?.(channelParentId), undefined)
           : undefined;
         const mentions = Math.max(0, safely(() => Number(ReadStateStore?.getMentionCount?.(channel.id) ?? 0), 0));
-        const unreadCount = Math.max(0, safely(() => Number(ReadStateStore?.getUnreadCount?.(channel.id) ?? 0), 0));
-        const unread = safely(() => ReadStateStore?.hasUnread?.(channel.id) === true, false) || mentions > 0 || unreadCount > 0;
+        const rawUnreadCount = Math.max(0, safely(() => Number(ReadStateStore?.getUnreadCount?.(channel.id) ?? 0), 0));
+        const muted = isChannelMuted(UserGuildSettingsStore, currentGuildId, channel.id)
+          || (thread && safely(() => JoinedThreadsStore?.isMuted?.(channel.id) === true, false));
+        const rawUnread = safely(() => ReadStateStore?.hasUnread?.(channel.id) === true, false)
+          || mentions > 0
+          || rawUnreadCount > 0;
+        // Muting suppresses ordinary unread priority, but an explicit mention remains actionable.
+        const unread = mentions > 0 || (rawUnread && !muted);
+        const unreadCount = muted && mentions === 0 ? 0 : rawUnreadCount;
 
         destinations.push({
           kind: thread ? "thread" : "channel",
@@ -141,6 +172,8 @@ export class DiscordDestinationStore {
           unread,
           unreadCount,
           mentions,
+          muted,
+          lastActivityAt: snowflakeTimestamp(channel.lastMessageId ?? channel.last_message_id),
           position: channel.rawPosition ?? channel.position ?? Number.MAX_SAFE_INTEGER
         });
       }
@@ -156,6 +189,7 @@ export class DiscordDestinationStore {
         unread: false,
         unreadCount: 0,
         mentions: 0,
+        muted: false,
         position: Number.MAX_SAFE_INTEGER
       });
     }

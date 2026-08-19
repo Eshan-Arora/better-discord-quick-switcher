@@ -10,6 +10,8 @@ export interface Destination {
   unread: boolean;
   unreadCount: number;
   mentions: number;
+  muted: boolean;
+  lastActivityAt?: number;
   position: number;
 }
 

@@ -11,6 +11,7 @@ const thread: Destination = {
   unread: false,
   unreadCount: 0,
   mentions: 0,
+  muted: false,
   position: 0
 };
 

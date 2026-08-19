@@ -1,6 +1,6 @@
 {
   "name": "better-quick-switcher",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "A server-scoped, unread-aware BetterDiscord quick switcher.",
   "type": "module",

@@ -3,10 +3,12 @@ import test from "node:test";
 import {rankDestinations} from "../src/search/ranking.ts";
 import type {Destination} from "../src/types.ts";
 
+const DAY = 24 * 60 * 60 * 1000;
+
 const base: Destination[] = [
-  {kind: "channel", id: "channel-read", guildId: "g1", name: "boat-maintenance", unread: false, unreadCount: 0, mentions: 0, position: 1},
-  {kind: "thread", id: "thread-unread", guildId: "g1", name: "FJ 7 centerboard issue", parentChannelId: "channel-read", parentChannelName: "boat-maintenance", unread: true, unreadCount: 5, mentions: 0, position: 2},
-  {kind: "guild", id: "g2", guildId: "g2", name: "Husky Sailing", unread: false, unreadCount: 0, mentions: 0, position: 99}
+  {kind: "channel", id: "channel-read", guildId: "g1", name: "boat-maintenance", unread: false, unreadCount: 0, mentions: 0, muted: false, position: 1},
+  {kind: "thread", id: "thread-unread", guildId: "g1", name: "FJ 7 centerboard issue", parentChannelId: "channel-read", parentChannelName: "boat-maintenance", unread: true, unreadCount: 5, mentions: 0, muted: false, position: 2},
+  {kind: "guild", id: "g2", guildId: "g2", name: "Husky Sailing", unread: false, unreadCount: 0, mentions: 0, muted: false, position: 99}
 ];
 
 test("empty query ranks unread threads above read channels and servers", () => {
@@ -35,4 +37,25 @@ test("recent decayed usage breaks text-match ties", () => {
     recent: {visits: 5, lastVisited: now - 60 * 1000}
   }, now);
   assert.equal(ranked[0]?.id, "recent");
+});
+
+test("muted ordinary unread is ignored for empty-query priority", () => {
+  const destinations: Destination[] = [
+    {...base[0], id: "muted", name: "z-muted", unread: true, unreadCount: 50, muted: true},
+    {...base[0], id: "read", name: "a-read"}
+  ];
+  const ranked = rankDestinations(destinations, "", {});
+  assert.deepEqual(ranked.map(({id}) => id), ["read", "muted"]);
+});
+
+test("recent channel activity breaks close fuzzy matches", () => {
+  const now = 2_000_000_000_000;
+  const destinations: Destination[] = [
+    {...base[0], id: "archive", name: "b2s-maintenance", lastActivityAt: now - 5 * 365 * DAY},
+    {...base[0], id: "active", name: "boat-maintenance", lastActivityAt: now - 2 * DAY}
+  ];
+  const ranked = rankDestinations(destinations, "main", {
+    archive: {visits: 1, lastVisited: now - 60_000}
+  }, now);
+  assert.equal(ranked[0]?.id, "active");
 });
