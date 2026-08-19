@@ -47,6 +47,7 @@ npm run check       # typecheck, tests, production build
 - Unread direct and group DMs appear before every server destination; muted DMs only rise for explicit mentions.
 - Typed query: fuzzy name match dominates; recent message activity and decayed personal usage break close matches, while thread parent names provide weaker context.
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
+- Result symbols distinguish destination types at a glance: `@` DM, `#` channel, `◉` thread, and `◆` server.
 - Current-server text channels and client-known threads are searchable.
 - Recent/open direct and group DMs are searchable from any scope.
 - Other servers' internal destinations are excluded; the servers themselves remain selectable.

@@ -50,8 +50,8 @@ export const styles = `
 
 .bqs-result {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 3px 14px;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 3px 10px;
   min-height: 50px;
   box-sizing: border-box;
   padding: 8px 10px;
@@ -62,7 +62,22 @@ export const styles = `
 .bqs-result[aria-selected="true"] { background: var(--background-modifier-selected, #404249); }
 .bqs-result:hover { background: var(--background-modifier-hover, #35373c); }
 
+.bqs-symbol {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-self: center;
+  width: 22px;
+  color: var(--text-muted, #949ba4);
+  font: 650 16px/22px var(--font-primary, system-ui, sans-serif);
+  text-align: center;
+}
+
+.bqs-symbol[data-kind="dm"] { color: var(--brand-500, #5865f2); }
+.bqs-symbol[data-kind="thread"] { color: var(--text-link, #00a8fc); }
+.bqs-symbol[data-kind="guild"] { color: var(--status-positive, #23a55a); }
+
 .bqs-name {
+  grid-column: 2;
   overflow: hidden;
   color: var(--header-primary, #f2f3f5);
   font: 550 15px/20px var(--font-primary, system-ui, sans-serif);
@@ -71,7 +86,7 @@ export const styles = `
 }
 
 .bqs-meta {
-  grid-column: 1;
+  grid-column: 2;
   overflow: hidden;
   color: var(--text-muted, #949ba4);
   font: 400 12px/16px var(--font-primary, system-ui, sans-serif);
@@ -80,7 +95,7 @@ export const styles = `
 }
 
 .bqs-badges {
-  grid-column: 2;
+  grid-column: 3;
   grid-row: 1 / span 2;
   display: flex;
   align-items: center;

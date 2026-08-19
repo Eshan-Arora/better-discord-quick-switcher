@@ -8,14 +8,26 @@ interface QuickSwitcherOptions {
   onClose(): void;
 }
 
+export function destinationSymbol(kind: Destination["kind"]): string {
+  switch (kind) {
+    case "dm": return "@";
+    case "channel": return "#";
+    case "thread": return "◉";
+    case "guild": return "◆";
+  }
+}
+
 export class QuickSwitcher {
+  private readonly options: QuickSwitcherOptions;
   private root: HTMLDivElement | null = null;
   private input: HTMLInputElement | null = null;
   private list: HTMLDivElement | null = null;
   private results: RankedDestination[] = [];
   private selectedIndex = 0;
 
-  constructor(private readonly options: QuickSwitcherOptions) {}
+  constructor(options: QuickSwitcherOptions) {
+    this.options = options;
+  }
 
   open(): void {
     this.close(false);
@@ -146,9 +158,18 @@ export class QuickSwitcher {
       row.addEventListener("mousedown", (event) => event.preventDefault());
       row.addEventListener("click", () => this.options.onChoose(destination));
 
+      const symbol = document.createElement("div");
+      symbol.className = "bqs-symbol";
+      symbol.dataset.kind = destination.kind;
+      symbol.textContent = destinationSymbol(destination.kind);
+      symbol.title = destination.kind === "guild" ? "Server"
+        : destination.kind === "dm" ? (destination.groupDm ? "Group DM" : "Direct Message")
+          : destination.kind === "thread" ? "Thread" : "Channel";
+      symbol.setAttribute("aria-hidden", "true");
+
       const name = document.createElement("div");
       name.className = "bqs-name";
-      name.textContent = destination.kind === "channel" ? `#${destination.name}` : destination.name;
+      name.textContent = destination.name;
 
       const meta = document.createElement("div");
       meta.className = "bqs-meta";
@@ -173,7 +194,7 @@ export class QuickSwitcher {
         badges.append(mention);
       }
 
-      row.append(name, meta, badges);
+      row.append(symbol, name, meta, badges);
       this.list?.append(row);
       if (index === this.selectedIndex) {
         this.input?.setAttribute("aria-activedescendant", row.id);
