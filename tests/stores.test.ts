@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   guildIconUrl,
+  guildMentionCount,
   isPrivateChannelUnread,
   orderedGuildIds,
   privateChannelIconUrl,
@@ -43,6 +44,13 @@ test("derives direct and unnamed group DM names from recipients", () => {
 test("builds Discord CDN guild icon URLs and handles iconless servers", () => {
   assert.equal(guildIconUrl({id: "g1", icon: "hash"}), "https://cdn.discordapp.com/icons/g1/hash.webp?size=64");
   assert.equal(guildIconUrl({id: "g2", icon: null}), undefined);
+});
+
+test("reads aggregate mention counts for server destinations", () => {
+  const GuildReadStateStore = {getMentionCount: (guildId: string) => guildId === "wyc" ? 2 : 0};
+  assert.equal(guildMentionCount(GuildReadStateStore, "wyc"), 2);
+  assert.equal(guildMentionCount(GuildReadStateStore, "other"), 0);
+  assert.equal(guildMentionCount(undefined, "wyc"), 0);
 });
 
 test("builds direct-message avatar and group-DM icon URLs", () => {

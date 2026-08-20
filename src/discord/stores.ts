@@ -101,6 +101,13 @@ export function guildIconUrl(guild: {id: string; icon?: string | null}): string 
   return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.webp?size=64`;
 }
 
+export function guildMentionCount(GuildReadStateStore: any, guildId: string): number {
+  return Math.max(0, safely(
+    () => Number(GuildReadStateStore?.getMentionCount?.(guildId) ?? 0),
+    0
+  ));
+}
+
 function channelGuildId(channel: DiscordChannel): string | undefined {
   return channel.guild_id ?? channel.guildId;
 }
@@ -235,6 +242,7 @@ export class DiscordDestinationStore {
     const PermissionStore = this.webpack.getStore("PermissionStore");
     const UserGuildSettingsStore = this.webpack.getStore("UserGuildSettingsStore");
     const JoinedThreadsStore = this.webpack.getStore("JoinedThreadsStore");
+    const GuildReadStateStore = this.webpack.getStore("GuildReadStateStore");
     const SortedGuildStore = this.webpack.getStore("SortedGuildStore");
     const PrivateChannelSortStore = this.webpack.getStore("PrivateChannelSortStore");
     const PrivateChannelReadStateStore = this.webpack.getStore("PrivateChannelReadStateStore");
@@ -360,15 +368,17 @@ export class DiscordDestinationStore {
 
     for (const guild of Object.values(guilds)) {
       if (!guild?.id || guild.id === currentGuildId) continue;
+      const mentions = guildMentionCount(GuildReadStateStore, guild.id);
       destinations.push({
         kind: "guild",
         id: guild.id,
         guildId: guild.id,
         name: guild.name || "Unnamed server",
         iconUrl: guildIconUrl(guild),
-        unread: false,
+        // Cross-server noise stays suppressed, but explicit mentions remain actionable.
+        unread: mentions > 0,
         unreadCount: 0,
-        mentions: 0,
+        mentions,
         muted: false,
         position: guildOrder.get(guild.id) ?? Number.MAX_SAFE_INTEGER
       });

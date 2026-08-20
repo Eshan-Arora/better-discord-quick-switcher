@@ -85,6 +85,15 @@ test("unread DMs rank ahead of mentions and unread server destinations", () => {
   assert.equal(rankDestinations(destinations, "", {})[0]?.id, "dm");
 });
 
+test("a server with a mention follows an unread DM and precedes read DMs", () => {
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "ori", name: "Ori", unread: true, unreadCount: 1, mentions: 1, position: 0},
+    {...base[2], id: "wyc", name: "Washington Yacht Club", unread: true, mentions: 1, position: 5},
+    {...base[0], kind: "dm", guildId: "@me", id: "recent-dm", name: "Recent DM", position: 1, lastActivityAt: Date.now()}
+  ];
+  assert.deepEqual(rankDestinations(destinations, "", {}).map(({id}) => id), ["ori", "wyc", "recent-dm"]);
+});
+
 test("DM names participate in normal typed search", () => {
   const destinations: Destination[] = [
     ...base,
