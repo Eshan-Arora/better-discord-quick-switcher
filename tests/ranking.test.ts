@@ -126,3 +126,29 @@ test("read DMs do not crowd out current-server destinations on an empty query", 
   ];
   assert.equal(rankDestinations(destinations, "", {})[0]?.id, "channel");
 });
+
+test("stale read group DMs fall behind manually ordered servers", () => {
+  const now = 2_000_000_000_000;
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "camping", name: "Camping", groupDm: true, position: 0, lastActivityAt: now - 5 * 365 * DAY},
+    {...base[0], kind: "dm", guildId: "@me", id: "rammus", name: "rammus, Jungho", groupDm: true, position: 1, lastActivityAt: now - 4 * 365 * DAY},
+    {...base[2], id: "top-server", name: "Top Server", position: 0},
+    {...base[2], id: "later-server", name: "Later Server", position: 20}
+  ];
+  assert.deepEqual(
+    rankDestinations(destinations, "", {}, now).map(({id}) => id),
+    ["top-server", "later-server", "rammus", "camping"]
+  );
+});
+
+test("a genuinely recent and used read DM can still outrank an ordinary server", () => {
+  const now = 2_000_000_000_000;
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "active-dm", name: "Active DM", position: 50, lastActivityAt: now - 60_000},
+    {...base[2], id: "server", name: "Server", position: 0}
+  ];
+  const ranked = rankDestinations(destinations, "", {
+    "active-dm": {visits: 2, lastVisited: now - 60_000}
+  }, now);
+  assert.equal(ranked[0]?.id, "active-dm");
+});

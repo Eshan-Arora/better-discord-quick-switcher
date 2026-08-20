@@ -45,6 +45,7 @@ npm run check       # typecheck, tests, production build
 - `Cmd+K` opens or closes the custom switcher and suppresses the stock switcher.
 - Empty query: mentions, non-muted unread destinations, decayed usage history, and recent message activity determine the order.
 - Unread direct and group DMs appear before every server destination; muted DMs only rise for explicit mentions.
+- Read DMs must earn prominence through recent activity or switcher usage. Stale DMs fall below servers, whose empty-query order follows the Discord sidebar.
 - Typed query: fuzzy name match dominates; recent message activity and decayed personal usage break close matches, while thread parent names provide weaker context.
 - `Up`/`Down` or `Ctrl+K`/`Ctrl+J` moves selection, `Enter` navigates, and `Esc` closes.
 - Discord's own hash and thread SVG geometry distinguish channels and threads; servers use their guild image when available, with local SVG fallbacks for iconless servers and DMs.
