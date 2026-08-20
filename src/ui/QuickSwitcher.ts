@@ -195,9 +195,10 @@ export class QuickSwitcher {
       const symbol = document.createElement("div");
       symbol.className = "bqs-symbol";
       symbol.dataset.kind = destination.kind;
-      if (destination.kind === "guild" && destination.iconUrl) {
+      if (destination.iconUrl) {
         const image = document.createElement("img");
-        image.className = "bqs-server-icon";
+        image.className = "bqs-destination-image";
+        image.dataset.kind = destination.kind;
         image.src = destination.iconUrl;
         image.alt = "";
         image.draggable = false;

@@ -11,6 +11,7 @@ interface LoggerApi {
 interface DiscordChannel {
   id: string;
   name?: string;
+  icon?: string | null;
   type?: number | string;
   guild_id?: string;
   guildId?: string;
@@ -142,13 +143,60 @@ interface DiscordUser {
   username?: string;
   globalName?: string;
   displayName?: string;
+  avatar?: string | null;
+  discriminator?: string;
+}
+
+export function userAvatarUrl(user: DiscordUser): string {
+  if (user.avatar) {
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.webp?size=64`;
+  }
+
+  let defaultAvatarIndex = 0;
+  if (user.discriminator && user.discriminator !== "0") {
+    defaultAvatarIndex = Number(user.discriminator) % 5;
+  } else {
+    try {
+      defaultAvatarIndex = Number((BigInt(user.id) >> 22n) % 6n);
+    } catch {
+      // Non-snowflake IDs only occur in tests or partially loaded client state.
+    }
+  }
+  return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex}.png`;
+}
+
+function privateRecipientIds(channel: DiscordChannel): string[] {
+  if (channel.recipients?.length) return channel.recipients;
+  return [safely(() => channel.getRecipientId?.(), undefined)]
+    .filter((id): id is string => Boolean(id));
+}
+
+export function privateChannelIconUrl(channel: DiscordChannel, UserStore: any): string | undefined {
+  if (isGroupDm(channel)) {
+    return channel.icon
+      ? `https://cdn.discordapp.com/channel-icons/${channel.id}/${channel.icon}.webp?size=64`
+      : undefined;
+  }
+
+  const recipientId = privateRecipientIds(channel)[0];
+  if (!recipientId) return undefined;
+  const recipient = safely<DiscordUser | undefined>(() => UserStore?.getUser?.(recipientId), undefined);
+  return recipient ? userAvatarUrl(recipient) : undefined;
+}
+
+export function isPrivateChannelUnread(
+  channelId: string,
+  authoritativeUnreadIds: ReadonlySet<string> | null,
+  ReadStateStore: any,
+  unreadCount: number
+): boolean {
+  if (authoritativeUnreadIds !== null) return authoritativeUnreadIds.has(channelId);
+  return safely(() => ReadStateStore?.hasUnread?.(channelId) === true, false) || unreadCount > 0;
 }
 
 export function privateChannelName(channel: DiscordChannel, UserStore: any): string {
   if (isGroupDm(channel) && channel.name?.trim()) return channel.name.trim();
-  const recipientIds = channel.recipients?.length
-    ? channel.recipients
-    : [safely(() => channel.getRecipientId?.(), undefined)].filter((id): id is string => Boolean(id));
+  const recipientIds = privateRecipientIds(channel);
   const names = recipientIds.map((userId) => {
     const user = safely<DiscordUser | undefined>(() => UserStore?.getUser?.(userId), undefined);
     return user?.globalName || user?.displayName || user?.username;
@@ -217,26 +265,32 @@ export class DiscordDestinationStore {
         .filter((id): id is string => typeof id === "string")
         .map((channelId, index) => [channelId, index])
     );
-    const unreadPrivateIds = new Set(
-      listValues(safely(() => PrivateChannelReadStateStore?.getUnreadPrivateChannelIds?.(), null))
-        .filter((id): id is string => typeof id === "string")
-    );
+    let unreadPrivateIds: ReadonlySet<string> | null = null;
+    if (typeof PrivateChannelReadStateStore?.getUnreadPrivateChannelIds === "function") {
+      try {
+        unreadPrivateIds = new Set(
+          listValues(PrivateChannelReadStateStore.getUnreadPrivateChannelIds())
+            .filter((id): id is string => typeof id === "string")
+        );
+      } catch {
+        // Fall back to the generic read-state APIs if this client store changes.
+      }
+    }
 
     for (const channel of privateChannels.values()) {
       if (!isPrivateChannel(channel)) continue;
       const mentions = Math.max(0, safely(() => Number(ReadStateStore?.getMentionCount?.(channel.id) ?? 0), 0));
       const rawUnreadCount = Math.max(0, safely(() => Number(ReadStateStore?.getUnreadCount?.(channel.id) ?? 0), 0));
       const muted = isChannelMuted(UserGuildSettingsStore, null, channel.id);
-      const rawUnread = unreadPrivateIds.has(channel.id)
-        || safely(() => ReadStateStore?.hasUnread?.(channel.id) === true, false)
-        || mentions > 0
-        || rawUnreadCount > 0;
+      const rawUnread = mentions > 0
+        || isPrivateChannelUnread(channel.id, unreadPrivateIds, ReadStateStore, rawUnreadCount);
       destinations.push({
         kind: "dm",
         id: channel.id,
         guildId: "@me",
         name: privateChannelName(channel, UserStore),
         groupDm: isGroupDm(channel),
+        iconUrl: privateChannelIconUrl(channel, UserStore),
         unread: mentions > 0 || (rawUnread && !muted),
         unreadCount: muted && mentions === 0 ? 0 : rawUnreadCount,
         mentions,

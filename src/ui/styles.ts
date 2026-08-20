@@ -76,12 +76,16 @@ export const styles = `
   height: 20px;
 }
 
-.bqs-server-icon {
+.bqs-destination-image {
   display: block;
   width: 22px;
   height: 22px;
   border-radius: 7px;
   object-fit: cover;
+}
+
+.bqs-destination-image[data-kind="dm"] {
+  border-radius: 50%;
 }
 
 .bqs-name {
