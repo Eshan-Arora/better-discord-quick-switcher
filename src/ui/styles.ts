@@ -46,7 +46,11 @@ export const styles = `
   max-height: min(57vh, 520px);
   overflow-y: auto;
   padding: 7px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+
+.bqs-list::-webkit-scrollbar { display: none; }
 
 .bqs-result {
   display: grid;
