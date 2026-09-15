@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if command -v bdcli >/dev/null 2>&1; then
+  betterdiscord_cli=(bdcli)
+elif command -v npx >/dev/null 2>&1; then
+  echo "bdcli not found; running it through npx..."
+  betterdiscord_cli=(npx --yes --package @betterdiscord/cli bdcli)
+else
+  echo "Error: install Node.js/npm or follow https://docs.betterdiscord.app/users/getting-started/installation" >&2
+  exit 1
+fi
+
+echo "Installing BetterDiscord into Discord Stable..."
+"${betterdiscord_cli[@]}" install --channel stable
+echo "Done."

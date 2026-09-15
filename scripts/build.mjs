@@ -1,6 +1,6 @@
 import * as esbuild from "esbuild";
-import {access, copyFile, mkdir, readFile} from "node:fs/promises";
-import {homedir} from "node:os";
+import { access, copyFile, mkdir, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 
@@ -21,14 +21,17 @@ async function readLocalPluginDir() {
   try {
     const contents = await readFile(path.join(root, ".env.local"), "utf8");
     const line = contents.split(/\r?\n/).find((entry) => entry.startsWith("BETTERDISCORD_PLUGIN_DIR="));
-    return line?.slice("BETTERDISCORD_PLUGIN_DIR=".length).trim().replace(/^['\"]|['\"]$/g, "");
+    return line
+      ?.slice("BETTERDISCORD_PLUGIN_DIR=".length)
+      .trim()
+      .replace(/^['\"]|['\"]$/g, "");
   } catch {
     return undefined;
   }
 }
 
 async function detectPluginDir() {
-  const configured = process.env.BETTERDISCORD_PLUGIN_DIR || await readLocalPluginDir();
+  const configured = process.env.BETTERDISCORD_PLUGIN_DIR || (await readLocalPluginDir());
   if (configured) return path.resolve(configured);
 
   if (process.platform === "darwin") {
@@ -53,7 +56,7 @@ async function installArtifact() {
   console.log(`[BetterQuickSwitcher] Installed ${destination}`);
 }
 
-await mkdir(path.dirname(outfile), {recursive: true});
+await mkdir(path.dirname(outfile), { recursive: true });
 
 const options = {
   entryPoints: [path.join(root, "src", "entry.cts")],
@@ -64,22 +67,26 @@ const options = {
   target: ["chrome120"],
   sourcemap: isWatch ? "inline" : false,
   legalComments: "none",
-  banner: {js: banner},
-  define: {__DEV__: JSON.stringify(isWatch)},
+  banner: { js: banner },
+  define: { __DEV__: JSON.stringify(isWatch) },
   logLevel: "info",
-  plugins: shouldInstall ? [{
-    name: "install-betterdiscord-plugin",
-    setup(build) {
-      build.onEnd(async (result) => {
-        if (result.errors.length) return;
-        try {
-          await installArtifact();
-        } catch (error) {
-          console.error(`[BetterQuickSwitcher] ${error instanceof Error ? error.message : String(error)}`);
-        }
-      });
-    }
-  }] : []
+  plugins: shouldInstall
+    ? [
+        {
+          name: "install-betterdiscord-plugin",
+          setup(build) {
+            build.onEnd(async (result) => {
+              if (result.errors.length) return;
+              try {
+                await installArtifact();
+              } catch (error) {
+                console.error(`[BetterQuickSwitcher] ${error instanceof Error ? error.message : String(error)}`);
+              }
+            });
+          },
+        },
+      ]
+    : [],
 };
 
 if (isWatch) {

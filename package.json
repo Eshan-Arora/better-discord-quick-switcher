@@ -2,13 +2,14 @@
   "name": "better-quick-switcher",
   "version": "0.1.4",
   "private": true,
-  "description": "A server-scoped, unread-aware BetterDiscord quick switcher.",
+  "description": "A better Discord quick switcher",
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
+    "install-plugin": "node scripts/build.mjs --install",
     "dev": "node scripts/build.mjs --watch --install",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
