@@ -9,6 +9,7 @@ export interface Destination {
   parentChannelName?: string;
   groupDm?: boolean;
   iconUrl?: string;
+  groupDmAvatarUrls?: readonly string[];
   unread: boolean;
   unreadCount: number;
   mentions: number;

@@ -7,5 +7,6 @@ test("uses distinct SVG geometry for every destination type", () => {
   assert.equal(signatures.length, 4);
   assert.equal(new Set(signatures).size, signatures.length);
   assert.equal(destinationIconDefinitions.channel.filled, true);
+  assert.equal(destinationIconDefinitions.channel.fillRule, "evenodd");
   assert.equal(destinationIconDefinitions.thread.filled, true);
 });

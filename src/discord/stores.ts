@@ -191,6 +191,15 @@ export function privateChannelIconUrl(channel: DiscordChannel, UserStore: any): 
   return recipient ? userAvatarUrl(recipient) : undefined;
 }
 
+export function groupDmAvatarUrls(channel: DiscordChannel, UserStore: any): string[] {
+  if (!isGroupDm(channel) || channel.icon) return [];
+  return privateRecipientIds(channel)
+    .slice(0, 2)
+    .map((recipientId) => safely<DiscordUser | undefined>(() => UserStore?.getUser?.(recipientId), undefined))
+    .filter((recipient): recipient is DiscordUser => Boolean(recipient))
+    .map(userAvatarUrl);
+}
+
 export function isPrivateChannelUnread(
   channelId: string,
   authoritativeUnreadIds: ReadonlySet<string> | null,
@@ -287,6 +296,7 @@ export class DiscordDestinationStore {
 
     for (const channel of privateChannels.values()) {
       if (!isPrivateChannel(channel)) continue;
+      const groupAvatarUrls = groupDmAvatarUrls(channel, UserStore);
       const mentions = Math.max(0, safely(() => Number(ReadStateStore?.getMentionCount?.(channel.id) ?? 0), 0));
       const rawUnreadCount = Math.max(0, safely(() => Number(ReadStateStore?.getUnreadCount?.(channel.id) ?? 0), 0));
       const muted = isChannelMuted(UserGuildSettingsStore, null, channel.id);
@@ -299,6 +309,7 @@ export class DiscordDestinationStore {
         name: privateChannelName(channel, UserStore),
         groupDm: isGroupDm(channel),
         iconUrl: privateChannelIconUrl(channel, UserStore),
+        groupDmAvatarUrls: groupAvatarUrls.length ? groupAvatarUrls : undefined,
         unread: mentions > 0 || (rawUnread && !muted),
         unreadCount: muted && mentions === 0 ? 0 : rawUnreadCount,
         mentions,

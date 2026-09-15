@@ -10,12 +10,14 @@ interface QuickSwitcherOptions {
 
 interface DestinationIconDefinition {
   filled: boolean;
+  fillRule?: "evenodd";
   paths: readonly string[];
 }
 
 export const destinationIconDefinitions: Record<Destination["kind"], DestinationIconDefinition> = {
   channel: {
     filled: true,
+    fillRule: "evenodd",
     paths: ["M10.99 3.16A1 1 0 1 0 9 2.84L8.15 8H4a1 1 0 0 0 0 2h3.82l-.67 4H3a1 1 0 1 0 0 2h3.82l-.8 4.84a1 1 0 0 0 1.97.32L8.85 16h4.97l-.8 4.84a1 1 0 0 0 1.97.32l.86-5.16H20a1 1 0 1 0 0-2h-3.82l.67-4H21a1 1 0 1 0 0-2h-3.82l.8-4.84a1 1 0 1 0-1.97-.32L15.15 8h-4.97l.8-4.84ZM14.15 14l.67-4H9.85l-.67 4h4.97Z"]
   },
   thread: {
@@ -46,6 +48,10 @@ function createDestinationIcon(kind: Destination["kind"]): SVGSVGElement {
   for (const pathData of definition.paths) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathData);
+    if (definition.fillRule) {
+      path.setAttribute("fill-rule", definition.fillRule);
+      path.setAttribute("clip-rule", definition.fillRule);
+    }
     svg.append(path);
   }
   return svg;
@@ -203,6 +209,28 @@ export class QuickSwitcher {
         image.alt = "";
         image.draggable = false;
         symbol.append(image);
+      } else if (destination.groupDmAvatarUrls?.length) {
+        if (destination.groupDmAvatarUrls.length === 1) {
+          const image = document.createElement("img");
+          image.className = "bqs-destination-image";
+          image.dataset.kind = "dm";
+          image.src = destination.groupDmAvatarUrls[0];
+          image.alt = "";
+          image.draggable = false;
+          symbol.append(image);
+        } else {
+          const facepile = document.createElement("div");
+          facepile.className = "bqs-group-dm-facepile";
+          destination.groupDmAvatarUrls.slice(0, 2).forEach((url, avatarIndex) => {
+            const image = document.createElement("img");
+            image.className = `bqs-group-dm-avatar bqs-group-dm-avatar-${avatarIndex === 0 ? "back" : "front"}`;
+            image.src = url;
+            image.alt = "";
+            image.draggable = false;
+            facepile.append(image);
+          });
+          symbol.append(facepile);
+        }
       } else {
         symbol.append(createDestinationIcon(destination.kind));
       }

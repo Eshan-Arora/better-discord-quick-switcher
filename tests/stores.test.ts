@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  groupDmAvatarUrls,
   guildIconUrl,
   guildMentionCount,
   isPrivateChannelUnread,
@@ -67,6 +68,28 @@ test("builds direct-message avatar and group-DM icon URLs", () => {
     "https://cdn.discordapp.com/channel-icons/g1/group-hash.webp?size=64"
   );
   assert.equal(privateChannelIconUrl({id: "g2", type: 3}, UserStore), undefined);
+});
+
+test("builds iconless group-DM facepiles from the first two recipients", () => {
+  const users = new Map([
+    ["u1", {id: "100000000000000000", avatar: "first-hash", username: "first"}],
+    ["u2", {id: "200000000000000000", avatar: "second-hash", username: "second"}],
+    ["u3", {id: "300000000000000000", avatar: "third-hash", username: "third"}]
+  ]);
+  const UserStore = {getUser: (id: string) => users.get(id)};
+
+  assert.deepEqual(
+    groupDmAvatarUrls({id: "g1", type: 3, recipients: ["u1", "u2", "u3"]}, UserStore),
+    [
+      "https://cdn.discordapp.com/avatars/100000000000000000/first-hash.webp?size=64",
+      "https://cdn.discordapp.com/avatars/200000000000000000/second-hash.webp?size=64"
+    ]
+  );
+  assert.deepEqual(
+    groupDmAvatarUrls({id: "g2", type: 3, icon: "group-hash", recipients: ["u1", "u2"]}, UserStore),
+    []
+  );
+  assert.deepEqual(groupDmAvatarUrls({id: "d1", type: 1, recipients: ["u1"]}, UserStore), []);
 });
 
 test("uses Discord default avatars when a DM recipient has no custom avatar", () => {
