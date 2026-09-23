@@ -4,6 +4,8 @@ A BetterDiscord plugin that replaces Discord's `Cmd+K` quick switcher.
 
 The switcher shows channels/threads in the current server, DMs, and other servers. Unread channels/threads and DMs are at the top, so you can spam `Cmd+K` `enter` to view all unreads. Channels/threads are sorted by recent activity, and servers are ordered by their sidebar ordering.
 
+![Better Quick Switcher showing unread destinations](assets/better-quick-switcher.png)
+
 ## Get Started
 
 This is a local plugin and is not available in the BetterDiscord marketplace.
