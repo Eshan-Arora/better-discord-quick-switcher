@@ -10,7 +10,7 @@ The switcher shows channels/threads in the current server, DMs, and other server
 
 This is a local plugin and is not available in the BetterDiscord marketplace.
 
-1. [Install BetterDiscord](https://docs.betterdiscord.app/users/getting-started/installation), or run `./install-betterdiscord`.
+1. [Install BetterDiscord](https://docs.betterdiscord.app/users/getting-started/installation), or run `./setup`.
 2. From this repository, build and install the plugin:
 
    ```sh
@@ -21,7 +21,7 @@ This is a local plugin and is not available in the BetterDiscord marketplace.
 
 3. In Discord, open **Settings → Plugins** and enable **Better Quick Switcher**.
 
-If BetterDiscord stops loading after a Discord update, reinstall it using your usual method or rerun `./install-betterdiscord`.
+If BetterDiscord stops loading after a Discord update, reinstall it using your usual method or rerun `./setup`.
 
 ## Controls
 
