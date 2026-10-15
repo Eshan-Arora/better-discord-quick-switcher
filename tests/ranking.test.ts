@@ -152,3 +152,23 @@ test("a genuinely recent and used read DM can still outrank an ordinary server",
   }, now);
   assert.equal(ranked[0]?.id, "active-dm");
 });
+
+for (const activeAgeDays of [0, 30]) {
+  test(`a group DM active ${activeAgeDays} days ago beats an ancient exact-name DM`, () => {
+    const now = 2_000_000_000_000;
+    const destinations: Destination[] = [
+      {...base[0], kind: "dm", guildId: "@me", id: "old-boat", name: "boat", groupDm: true, lastActivityAt: now - 5 * 365 * DAY},
+      {...base[0], kind: "dm", guildId: "@me", id: "boat-titles", name: "Boat Titles", groupDm: true, lastActivityAt: now - activeAgeDays * DAY}
+    ];
+    assert.equal(rankDestinations(destinations, "boat", {}, now)[0]?.id, "boat-titles");
+  });
+}
+
+test("equally active group DMs still favor the exact name", () => {
+  const now = 2_000_000_000_000;
+  const destinations: Destination[] = [
+    {...base[0], kind: "dm", guildId: "@me", id: "boat-titles", name: "Boat Titles", groupDm: true, lastActivityAt: now},
+    {...base[0], kind: "dm", guildId: "@me", id: "boat", name: "boat", groupDm: true, lastActivityAt: now}
+  ];
+  assert.equal(rankDestinations(destinations, "boat", {}, now)[0]?.id, "boat");
+});

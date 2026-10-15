@@ -77,7 +77,8 @@ export function rankDestinations(
         score = match * 1_000
           + (actionableUnread ? 25 : 0)
           + usage * 15
-          + activity * 20;
+          // Let an active strong match beat an abandoned exact-name DM.
+          + activity * 200;
       } else {
         score = match * 1_000
           + 60
