@@ -18,10 +18,12 @@ export function centerChannelInList(documentRoot: Document, guildId: string, cha
 
 export class DiscordNavigator {
   private readonly webpack: WebpackApi;
+  private readonly getUnreadDestination?: (guildId: string) => Destination | undefined;
   private centerTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(webpack: WebpackApi) {
+  constructor(webpack: WebpackApi, getUnreadDestination?: (guildId: string) => Destination | undefined) {
     this.webpack = webpack;
+    this.getUnreadDestination = getUnreadDestination;
   }
 
   navigate(destination: Destination): void {
@@ -45,6 +47,9 @@ export class DiscordNavigator {
   }
 
   private guildRoute(guildId: string): string {
+    const unread = this.getUnreadDestination?.(guildId);
+    if (unread) return `/channels/${guildId}/${unread.id}`;
+
     const SelectedChannelStore = this.webpack.getStore("SelectedChannelStore");
     const GuildChannelStore = this.webpack.getStore("GuildChannelStore");
     const recentChannelId = this.tryCall(() => SelectedChannelStore?.getLastSelectedChannelId?.(guildId))

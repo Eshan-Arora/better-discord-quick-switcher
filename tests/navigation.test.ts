@@ -57,3 +57,30 @@ test("navigates direct messages through the @me route", () => {
   navigator.navigate({...thread, kind: "dm", guildId: "@me", groupDm: false});
   assert.deepEqual(routes, ["/channels/@me/thread-id"]);
 });
+
+for (const kind of ["channel", "thread"] as const) {
+  test(`server selection opens the resolved unread ${kind} before the last channel`, () => {
+    const routes: string[] = [];
+    const navigator = new DiscordNavigator({
+      getStore: () => ({getLastSelectedChannelId: () => "previous"}),
+      getByStrings: () => (route: string) => routes.push(route),
+      getModule: () => undefined
+    }, (guildId) => {
+      assert.equal(guildId, "guild-id");
+      return {...thread, kind, unread: true};
+    });
+    navigator.navigate({...thread, kind: "guild", id: "guild-id"});
+    assert.deepEqual(routes, ["/channels/guild-id/thread-id"]);
+  });
+}
+
+test("servers without an unread destination retain their previous channel", () => {
+  const routes: string[] = [];
+  const navigator = new DiscordNavigator({
+    getStore: () => ({getLastSelectedChannelId: () => "previous"}),
+    getByStrings: () => (route: string) => routes.push(route),
+    getModule: () => undefined
+  }, () => undefined);
+  navigator.navigate({...thread, kind: "guild", id: "guild-id"});
+  assert.deepEqual(routes, ["/channels/guild-id/previous"]);
+});

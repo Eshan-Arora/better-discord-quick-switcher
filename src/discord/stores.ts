@@ -241,7 +241,7 @@ export class DiscordDestinationStore {
     this.logger = logger;
   }
 
-  snapshot(): DestinationSnapshot {
+  snapshot(guildId?: string): DestinationSnapshot {
     const warnings: string[] = [];
     const SelectedGuildStore = this.webpack.getStore("SelectedGuildStore");
     const GuildStore = this.webpack.getStore("GuildStore");
@@ -263,7 +263,7 @@ export class DiscordDestinationStore {
     if (!GuildChannelStore) warnings.push("GuildChannelStore unavailable");
     if (!ReadStateStore) warnings.push("ReadStateStore unavailable");
 
-    const currentGuildId = safely(() => SelectedGuildStore?.getGuildId?.() ?? null, null);
+    const currentGuildId = guildId ?? safely(() => SelectedGuildStore?.getGuildId?.() ?? null, null);
     const guilds = safely<Record<string, {id: string; name?: string; icon?: string | null}>>(() => GuildStore?.getGuilds?.() ?? {}, {});
     const currentGuildName = currentGuildId ? guilds[currentGuildId]?.name ?? null : null;
     const destinations: Destination[] = [];

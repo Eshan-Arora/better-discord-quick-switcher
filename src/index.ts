@@ -1,5 +1,6 @@
 import {DiscordNavigator} from "./discord/navigation.ts";
 import {DiscordDestinationStore} from "./discord/stores.ts";
+import {rankDestinations} from "./search/ranking.ts";
 import {HistoryStore} from "./storage/history.ts";
 import {QuickSwitcher} from "./ui/QuickSwitcher.ts";
 import {styles} from "./ui/styles.ts";
@@ -17,7 +18,14 @@ export default class BetterQuickSwitcherPlugin {
     if (this.api) this.stop();
     this.api = new BdApi(PLUGIN_NAME);
     this.destinations = new DiscordDestinationStore(this.api.Webpack, this.api.Logger);
-    this.navigator = new DiscordNavigator(this.api.Webpack);
+    this.navigator = new DiscordNavigator(this.api.Webpack, (guildId) => {
+      const channels = this.destinations?.snapshot(guildId).destinations.filter(
+        (destination) => destination.guildId === guildId
+          && (destination.kind === "channel" || destination.kind === "thread")
+          && destination.unread && (!destination.muted || destination.mentions > 0)
+      ) ?? [];
+      return rankDestinations(channels, "", this.history?.getSnapshot() ?? {})[0];
+    });
     this.history = new HistoryStore(this.api.Data);
     this.api.DOM.addStyle(styles);
     window.addEventListener("keydown", this.onGlobalKeyDown, true);
